@@ -1,39 +1,43 @@
-from typing import Any, Dict, List, get_origin, get_args, Union
-
-from object_serializer.exceptions import NotADataclassError
+import builtins
+from typing import Any, Dict
 from object_serializer.utils.validations import Validator
 from dataclasses import fields
-import builtins
+from object_serializer.exceptions import InvalidDataTypeError
 
 
 def serialize(cls: Any) -> Dict[str, Any]:
-    if not Validator.validate_dataclass(cls):
-        raise NotADataclassError(cls)
+    """
+    Serializes a dataclass into a dictionary that maps field names to their types.
 
+    This function inspects the fields of a given dataclass and maps each field's name
+    to its respective type. It supports the following types: primitive types (builtins),
+    lists (List), optionals (Optional), and other dataclasses (dataclass).
+
+    If a field's type is not valid (not a dataclass, list, or optional), an
+    InvalidDataTypeError is raised.
+
+    :param cls: The dataclass to be serialized.
+    :param args: args
+    :return: A dictionary where the keys are field names and the values are their respective types.
+    :raises InvalidDataTypeError: If a field's type is neither a dataclass, a primitive type,
+                                 nor a valid data structure.
+    """
     cls_dict = {}
-    cls_origin = get_origin(cls)
-    cls_args = get_args(cls)
-    if cls_origin and (cls_origin is list or cls_origin is List):
-        cls = cls_args[0]
-    elif cls_origin and (cls_origin is Union and type(None) in cls_args):
-        cls = [arg for arg in cls_args if arg is not type(None)][0]
     for field in fields(cls):
         field_type = field.type
 
         if Validator.validate_dataclass(field_type):
-            cls_dict[field.name] = serialize(field_type)
+            cls_dict[field.name] = field_type
+        elif field_type in vars(builtins).values():
+            cls_dict[field.name] = field_type
         else:
-            origin = get_origin(field_type)
-            args = get_args(field_type)
-
-            if origin is list or origin is List:
-                cls_dict[field.name] = f"List[{args[0].__name__ if not Validator.validate_dataclass(args[0]) else
-                serialize(args[0])}]"
-            elif origin is Union and type(None) in args:
-                non_none_type = [arg for arg in args if arg is not type(None)][0]
-                cls_dict[field.name] = f"Optional[{non_none_type.__name__ if not
-                Validator.validate_dataclass(non_none_type) else serialize(non_none_type)}]"
+            if Validator.is_lst(field_type):
+                if Validator.validate_clslist(field_type):
+                    cls_dict[field.name] = field_type
+            elif Validator.is_optional(field_type):
+                if Validator.validate_clsoptional(field_type):
+                    cls_dict[field.name] = field_type
             else:
-                cls_dict[field.name] = field_type.__name__
+                raise InvalidDataTypeError(field_type, f"Field '{field.name}' with type {field_type} is not valid")
 
     return cls_dict
