@@ -1,5 +1,5 @@
 from dataclasses import field
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class NotADataclassError(Exception):
@@ -24,7 +24,7 @@ class UnresolvedAttributeError(Exception):
     """
     An error that indicates that a MANDATORY FIELD is not found inside a json or dictionary
     """
-    def __init__(self, cls: Any, data: Dict[str, Any], field_name, msg: str):
+    def __init__(self, cls: Optional[Any], data: Dict[str, Any], field_name, msg: str):
         self.cls = cls
         self.data = data
         self.field_name = field_name

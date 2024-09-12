@@ -1,7 +1,7 @@
 import builtins
 import json
 from dataclasses import is_dataclass
-from typing import Any, get_origin, List, get_args, Union, Optional
+from typing import Any, get_origin, List, get_args, Union, Optional, Dict
 from object_serializer.exceptions import InvalidDataTypeError
 
 class Validator:
@@ -149,3 +149,8 @@ class Validator:
         """
         origin = get_origin(cls)
         return origin is Union and type(None) in get_args(cls)
+
+    @staticmethod
+    def is_dict(cls: Any) -> bool:
+        origin = get_origin(cls)
+        return origin is Dict or origin is dict
