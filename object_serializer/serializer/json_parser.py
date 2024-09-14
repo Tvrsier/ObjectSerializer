@@ -1,4 +1,4 @@
-from typing import Any, Optional, List, Dict, get_args
+from typing import Any, Optional, List, Dict, get_args, get_origin
 
 from dataclass_serializer import serialize
 from object_serializer.exceptions import TypeValueMismatchError, InvalidDataTypeError
@@ -12,7 +12,7 @@ class Parser:
             is_optional = Validator.is_optional(value)
             is_list = Validator.is_lst(value)
             if is_optional:
-                if not Parser.validate_optional_type(key, data.get(key)):
+                if not Parser.validate_optional_type(value, data.get(key)):
                     raise TypeValueMismatchError(key, value, type(data.get(key)),
                                                  f"Expected type {value}, but either"
                                                  f"it's not None or"
@@ -25,7 +25,7 @@ class Parser:
                                                  f"not all values of it are {[arg for arg in get_args(value)][0]}")
 
             elif Validator.validate_dataclass(value):
-                if Validator.is_dict(type(data.get(key))):
+                if isinstance(data.get(key), Dict):
                     new_obj = data.get(key)
                     value_dict = serialize(value)
                     Parser.validate_types(value_dict, new_obj)
@@ -51,7 +51,7 @@ class Parser:
             return all(Parser.validate_list_type(arg, actual_value) for actual_value in actual)
         elif Validator.validate_dataclass(arg):
             serialized_cls = serialize(arg)
-            return all(Parser.validate_list_type(serialized_cls, actual_value) for actual_value in actual)
+            return all(Parser.validate_types(serialized_cls, actual_value) for actual_value in actual)
         elif all(isinstance(value, arg) for value in actual):
             return True
         return False
@@ -62,7 +62,7 @@ class Parser:
     def validate_optional_type(expected: Any, actual: Any) -> bool:
         if actual is None:
             return True
-        arg = next(argv for argv in get_args(expected) if argv is not None)[0]
+        arg = [argv for argv in get_args(expected) if argv is not None][0]
         if Validator.is_optional(arg):
             raise InvalidDataTypeError(arg, "Optional cannot contain Optional")
         elif Validator.is_lst(arg):

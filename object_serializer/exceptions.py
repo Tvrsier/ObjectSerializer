@@ -30,6 +30,7 @@ class UnresolvedAttributeError(Exception):
         self.field_name = field_name
         super().__init__(msg)
 
+
 class TypeValueMismatchError(Exception):
     """
     An error that indicates when a json field and a serialized dataclass has a type value mismatch

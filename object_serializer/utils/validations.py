@@ -117,7 +117,7 @@ class Validator:
             if Validator.is_lst(arg):
                 return Validator.validate_clslist(arg)
             if Validator.is_optional(arg):
-                return Validator.validate_clsoptional(arg)
+                raise InvalidDataTypeError(arg, "Optional type cannot contain another optional type")
             if Validator.validate_dataclass(arg):
                 return True
             raise InvalidDataTypeError(arg, f"Class {arg} has not a valid datatype")
