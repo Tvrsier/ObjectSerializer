@@ -233,7 +233,6 @@ class MyTestCase(unittest.TestCase):
                 ]
             ]
         }
-
         cls_dict = serialize(ObjectList)
         self.assertTrue(Parser.validate_types(cls_dict, json_data))
 

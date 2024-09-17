@@ -1,4 +1,4 @@
-from typing import Any, Optional, List, Dict, get_args, get_origin
+from typing import Any, List, Dict, get_args
 
 from dataclass_serializer import serialize
 from object_serializer.exceptions import TypeValueMismatchError, InvalidDataTypeError
@@ -55,8 +55,6 @@ class Parser:
         elif all(isinstance(value, arg) for value in actual):
             return True
         return False
-
-
 
     @staticmethod
     def validate_optional_type(expected: Any, actual: Any) -> bool:
