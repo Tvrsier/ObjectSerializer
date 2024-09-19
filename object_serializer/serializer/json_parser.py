@@ -1,9 +1,9 @@
 import json
 from typing import Any, List, Dict, get_args, Type, TypeVar, Union
 
-from dataclass_serializer import serialize, gen_dataclass_instance
+from object_serializer.serializer.dataclass_serializer import serialize, gen_dataclass_instance
 from object_serializer.exceptions import TypeValueMismatchError, InvalidDataTypeError
-from validations import Validator
+from object_serializer.utils.validations import Validator
 
 
 T = TypeVar('T')
@@ -48,6 +48,16 @@ class Parser:
 
     @staticmethod
     def _validate_types(cls: Type[T], cls_dict: Dict[str, Any], data: Dict[str, Any]) -> T:
+        """
+        Validates the types of the JSON data against the dataclass and recursively constructs
+        the dataclass instance.
+
+        :param cls: The dataclass to validate against.
+        :param cls_dict: The dictionary representation of the dataclass with expected types.
+        :param data: The JSON data as a dictionary.
+        :return: An instance of the dataclass populated with validated data.
+        :raises TypeValueMismatchError: If any value in the JSON does not match the expected type.
+        """
         validated_data = {}
         for key, value in cls_dict.items():
             is_optional = Validator.is_optional(value)
@@ -76,6 +86,14 @@ class Parser:
 
     @staticmethod
     def validate_list_type(expected: Any, actual: Any) -> List[Any]:
+        """
+        Validates that a list matches the expected type.
+
+        :param expected: The expected type of the list elements.
+        :param actual: The actual list to validate.
+        :return: A list with validated elements.
+        :raises TypeValueMismatchError: If the actual value is not a list or its elements do not match the expected type.
+        """
         if not isinstance(actual, List):
             raise TypeValueMismatchError(
                 "ListType", expected, type(actual),
@@ -98,6 +116,15 @@ class Parser:
 
     @staticmethod
     def validate_optional_type(expected: Any, actual: Any) -> Any:
+        """
+        Validates that an optional type matches the expected type or is None.
+
+        :param expected: The expected optional type.
+        :param actual: The actual value to validate.
+        :return: The validated value or None.
+        :raises InvalidDataTypeError: If the expected type is an invalid Optional type.
+        :raises TypeValueMismatchError: If the actual value does not match the expected type.
+        """
         if actual is None:
             return None
         arg = [argv for argv in get_args(expected) if argv is not None][0]

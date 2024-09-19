@@ -3,18 +3,27 @@ from typing import Any, Dict, Optional
 
 
 class NotADataclassError(Exception):
+    """
+    An error that indicates that the provided class is not a dataclass
+    """
     def __init__(self, cls: Any):
         self.cls = cls
         super().__init__(f"The class {cls.__name__} is not a dataclass.")
 
 
 class NotAJsonError(Exception):
+    """
+    An error that indicates that the provided json cannot be parsed into a dictionary
+    """
     def __init__(self, json: str):
         self.json = json
         super().__init__(f"The provided JSON string is not valid: {json}")
 
 
 class InvalidDataTypeError(Exception):
+    """
+    An error that indicates that a type inside a dataclass is not a valid type for json objects
+    """
     def __init__(self, cls: Any, msg: str):
         self.cls = cls
         super().__init__(msg)
