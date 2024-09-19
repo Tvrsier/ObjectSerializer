@@ -1,8 +1,11 @@
 import builtins
-from typing import Any, Dict
+from typing import Any, Dict, TypeVar, Type
 from object_serializer.utils.validations import Validator
 from dataclasses import fields
 from object_serializer.exceptions import InvalidDataTypeError
+
+
+T = TypeVar('T')
 
 
 def serialize(cls: Any) -> Dict[str, Any]:
@@ -41,3 +44,14 @@ def serialize(cls: Any) -> Dict[str, Any]:
                 raise InvalidDataTypeError(field_type, f"Field '{field.name}' with type {field_type} is not valid")
 
     return cls_dict
+
+
+def gen_dataclass_instance(cls: Type[T], data: Dict[str, Any]) -> T:
+    """
+    Generate an instance of a dataclass from validated data.
+
+    :param cls: The dataclass to instantiate.
+    :param data: A dictionary containing the validated data.
+    :return: An instance of the dataclass populated with the validated data.
+    """
+    return cls(**data)

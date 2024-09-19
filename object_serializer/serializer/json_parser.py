@@ -1,73 +1,116 @@
-from typing import Any, List, Dict, get_args
+import json
+from typing import Any, List, Dict, get_args, Type, TypeVar, Union
 
-from dataclass_serializer import serialize
+from dataclass_serializer import serialize, gen_dataclass_instance
 from object_serializer.exceptions import TypeValueMismatchError, InvalidDataTypeError
 from validations import Validator
 
 
+T = TypeVar('T')
+
+
 class Parser:
     @staticmethod
-    def validate_types(cls_dict: Dict[str, Any], data: Dict[str, Any]) -> bool:
+    def parse_json(data: str) -> Dict[str, Any]:
+        """
+        Converts a JSON string to a dictionary.
+
+        :param data: The string to be parsed as JSON.
+        :return: Parsed dictionary if valid JSON, otherwise raises JSONDecodeError.
+        :raises TypeError: If the data is None.
+        """
+        if data is None:
+            raise TypeError('data must not be None')
+
+        try:
+            return json.loads(data)
+        except json.JSONDecodeError as e:
+            raise e
+
+    @staticmethod
+    def validate_and_parse(cls: Type[T], data: Union[str, Dict[str, Any]]) -> T:
+        """
+        Validates a JSON string or dictionary against a dataclass and returns an instance of that dataclass.
+
+        :param cls: The dataclass to validate against.
+        :param data: JSON string or dictionary.
+        :return: An instance of the dataclass.
+        :raises TypeValueMismatchError: If any value in the JSON does not match the expected type.
+        """
+
+        if isinstance(data, str):
+            data = Parser.parse_json(data)
+
+        cls_dict = serialize(cls)
+        validated_data = Parser._validate_types(cls, cls_dict, data)
+
+        return validated_data
+
+    @staticmethod
+    def _validate_types(cls: Type[T], cls_dict: Dict[str, Any], data: Dict[str, Any]) -> T:
+        validated_data = {}
         for key, value in cls_dict.items():
             is_optional = Validator.is_optional(value)
             is_list = Validator.is_lst(value)
+            actual_value = data.get(key)
+
             if is_optional:
-                if not Parser.validate_optional_type(value, data.get(key)):
-                    raise TypeValueMismatchError(key, value, type(data.get(key)),
-                                                 f"Expected type {value}, but either"
-                                                 f"it's not None or"
-                                                 f"{[arg for arg in get_args(value) if arg is not None][0]}")
-
+                validated_data[key] = Parser.validate_optional_type(value, actual_value)
             elif is_list:
-                if not Parser.validate_list_type(value, data.get(key)):
-                    raise TypeValueMismatchError(key, value, type(data.get(key)),
-                                                 f"Expected array of type {value}, but either it's not or "
-                                                 f"not all values of it are {[arg for arg in get_args(value)][0]}")
-
+                validated_data[key] = Parser.validate_list_type(value, actual_value)
             elif Validator.validate_dataclass(value):
-                if isinstance(data.get(key), Dict):
-                    new_obj = data.get(key)
+                if isinstance(actual_value, Dict):
                     value_dict = serialize(value)
-                    Parser.validate_types(value_dict, new_obj)
+                    validated_data[key] = Parser._validate_types(value, value_dict, actual_value)
                 else:
-                    raise TypeValueMismatchError(key, value, type(data.get(key)),
-                                                 f"Expected a new object, found {type(data.get(key)).__name__}"
+                    raise TypeValueMismatchError(key, value, type(actual_value),
+                                                 f"Expected a new object, found {type(actual_value).__name__}"
                                                  f"instead")
             else:
-                if not isinstance(data.get(key), value):
-                    raise TypeValueMismatchError(key, value, type(data.get(key)),
+                if not isinstance(actual_value, value):
+                    raise TypeValueMismatchError(key, value, type(actual_value),
                                                  f"Expected type {value}, found "
-                                                 f"{type(data.get(key))} instead")
-        return True
+                                                 f"{type(actual_value)} instead")
+                validated_data[key] = actual_value
+        return gen_dataclass_instance(cls, validated_data)
 
     @staticmethod
-    def validate_list_type(expected: Any, actual: Any) -> bool:
+    def validate_list_type(expected: Any, actual: Any) -> List[Any]:
         if not isinstance(actual, List):
-            return False
+            raise TypeValueMismatchError(
+                "ListType", expected, type(actual),
+                f"Expected a list, found {type(actual).__name__} instead"
+            )
         arg = get_args(expected)[0]
         if Validator.is_optional(arg):
-            return Parser.validate_optional_type(arg, actual)
+            return [Parser.validate_optional_type(arg, item) for item in actual]
         elif Validator.is_lst(arg):
-            return all(Parser.validate_list_type(arg, actual_value) for actual_value in actual)
+            return [Parser.validate_list_type(arg, item) for item in actual]
         elif Validator.validate_dataclass(arg):
-            serialized_cls = serialize(arg)
-            return all(Parser.validate_types(serialized_cls, actual_value) for actual_value in actual)
+            return [Parser._validate_types(arg, serialize(arg), item) for item in actual]
         elif all(isinstance(value, arg) for value in actual):
-            return True
-        return False
+            return actual
+        else:
+            raise TypeValueMismatchError(
+                "ListType", expected, type(actual),
+                "List items do not match the expected type"
+            )
 
     @staticmethod
-    def validate_optional_type(expected: Any, actual: Any) -> bool:
+    def validate_optional_type(expected: Any, actual: Any) -> Any:
         if actual is None:
-            return True
+            return None
         arg = [argv for argv in get_args(expected) if argv is not None][0]
         if Validator.is_optional(arg):
             raise InvalidDataTypeError(arg, "Optional cannot contain Optional")
         elif Validator.is_lst(arg):
             return Parser.validate_list_type(arg, actual)
         elif Validator.validate_dataclass(arg) and Validator.is_dict(type(actual)):
-            return Parser.validate_types(serialize(arg), actual)
+            return Parser._validate_types(arg, serialize(arg), actual)
         elif isinstance(actual, arg):
-            return True
+            return actual
         else:
-            return False
+            raise TypeValueMismatchError(
+                "OptionalType", expected, type(actual),
+                f"Expected type {arg}, found {type(actual).__name__} instead"
+            )
