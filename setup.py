@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name="object-serializer",
     version="0.1.0",
-    packages=find_packages(exclude="test*"),
+    packages=find_packages(exclude=("test*", "examples*")),
     include_package_data=True,
     python_requires='>=3.7',
     classifiers=[

@@ -78,9 +78,11 @@ class Parser:
                                                  f"instead")
             else:
                 if not isinstance(actual_value, value):
-                    raise TypeValueMismatchError(key, value, type(actual_value),
-                                                 f"Expected type {value}, found "
-                                                 f"{type(actual_value)} instead")
+                    if not ((value is int and isinstance(actual_value, float)) or
+                            (value is float and isinstance(actual_value, int))):
+                        raise TypeValueMismatchError(key, value, type(actual_value),
+                                                     f"Expected type {value}, found "
+                                                     f"{type(actual_value)} instead")
                 validated_data[key] = actual_value
         return gen_dataclass_instance(cls, validated_data)
 
@@ -125,7 +127,7 @@ class Parser:
         :raises InvalidDataTypeError: If the expected type is an invalid Optional type.
         :raises TypeValueMismatchError: If the actual value does not match the expected type.
         """
-        if actual is None:
+        if actual is None or not actual:
             return None
         arg = [argv for argv in get_args(expected) if argv is not None][0]
         if Validator.is_optional(arg):
