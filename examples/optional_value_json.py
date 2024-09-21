@@ -21,7 +21,7 @@ class DummyJson:
 
 
 if __name__ == "__main__":
-    api_url = "https://dummyjson.com/c/0e93-0c00-4f57-81f2"
+    api_url = "https://dummyjson.com/c/c2f1-e092-4a73-b91e"
     json_data = fetch_data_from_api(api_url)
     dummy = Parser.validate_and_parse(DummyJson, json_data)
     print(json.dumps(asdict(dummy), indent=4))

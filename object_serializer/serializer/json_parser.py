@@ -127,7 +127,7 @@ class Parser:
         :raises InvalidDataTypeError: If the expected type is an invalid Optional type.
         :raises TypeValueMismatchError: If the actual value does not match the expected type.
         """
-        if actual is None or not actual:
+        if actual is None:
             return None
         arg = [argv for argv in get_args(expected) if argv is not None][0]
         if Validator.is_optional(arg):
