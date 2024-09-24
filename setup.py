@@ -1,5 +1,5 @@
-from mypyc.doc.conf import author
 from setuptools import setup, find_packages
+
 setup(
     name="object-serializer",
     version="0.1.0",
