@@ -19,7 +19,7 @@ Here are some of the project's best features:
 <p>1. To install the Object Serializer clone this repository and install the dependencies:</p>
 
 ```bash
-git clone https://github.com/yourusername/object-serializer.git 
+git clone https://github.com/Tvrsier/Object-Serializer.git 
 cd object-serializer 
 pip install -r requirements.txt
 ```
