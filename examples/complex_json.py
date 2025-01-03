@@ -58,7 +58,7 @@ json_data = fetch_data_from_api(api_url)
 
 def main():
     dummy = Parser.validate_and_parse(DummyJson, json_data)
-    # print(json.dumps(asdict(dummy), indent=4))
+    print(json.dumps(asdict(dummy), indent=4))
 
 
 if __name__ == "__main__":
